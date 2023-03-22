@@ -42,6 +42,10 @@ module top;
         $display("%d %x\n", i, cpu.reg_file.rf[i]);
       $finish();
     end
+    if (total_cycle > 1000000) begin
+      $display("is_halted is not implemented yet");
+      $finish();
+    end
   end
 
 endmodule
