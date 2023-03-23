@@ -19,9 +19,6 @@ module CPU(input reset,       // positive reset signal
   wire mem_write;
   wire write_enable;
   wire alu_op;
-  wire [4:0] rs1;
-  wire [4:0] rs2;
-  wire [4:0] rd;
   wire [31:0] rd_din;
   wire [31:0] rs1_dout;
   wire [31:0] rs2_dout;
@@ -73,9 +70,9 @@ module CPU(input reset,       // positive reset signal
   RegisterFile reg_file (
     .reset (reset),        // input
     .clk (clk),          // input
-    .rs1 (rs1),          // input
-    .rs2 (rs2),          // input
-    .rd (rd),           // input
+    .rs1 (inst[19:15]),          // input
+    .rs2 (inst[24:20]),          // input
+    .rd (inst[11:7]),           // input
     .rd_din (rd_din),       // input
     .write_enable (write_enable),    // input
     .rs1_dout (rs1_dout),     // output
