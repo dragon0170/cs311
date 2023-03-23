@@ -18,7 +18,7 @@ module CPU(input reset,       // positive reset signal
   wire mem_read;
   wire mem_write;
   wire write_enable;
-  wire alu_op;
+  wire [3:0] alu_op;
   wire [31:0] rd_din;
   wire [31:0] rs1_dout;
   wire [31:0] rs2_dout;
@@ -104,7 +104,7 @@ module CPU(input reset,       // positive reset signal
 
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit (
-    .part_of_inst(inst),  // input
+    .inst(inst),  // input
     .alu_op(alu_op)         // output
   );
 
