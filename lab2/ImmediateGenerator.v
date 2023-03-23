@@ -4,10 +4,10 @@ module ImmediateGenerator(input [31:0] inst, output [31:0] imm_gen_out);
     opcode = inst[6:0];
     
     if (opcode == `ARITHMETIC_IMM || opcode == `LOAD || opcode == `JALR) begin
-      imm_gen_out = {21{inst[31]}, inst[31:20]};
+      imm_gen_out = {21{inst[31]}, inst[30:20]};
     end
     else if (opcode == `STORE) begin
-      imm_gen_out = {21{inst[31]}, inst[31:25], inst[11:7]};
+      imm_gen_out = {21{inst[31]}, inst[30:25], inst[11:7]};
     end
     else if (opcode == `BRANCH) begin
       imm_gen_out = {20{inst[31]}, inst[7], inst[30:25], inst[11:8], 2'b0};
