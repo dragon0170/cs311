@@ -1,4 +1,6 @@
-module ControlUnit(input [31:0] part_of_inst,
+`include "opcodes.v"
+
+module ControlUnit(input [6:0] part_of_inst,
                    output is_jal,
                    output is_jalr,
                    output branch,
@@ -8,8 +10,13 @@ module ControlUnit(input [31:0] part_of_inst,
                    output alu_src,
                    output write_enable,
                    output pc_to_reg,
-                   output is_ecall);
-  
+                   output reg is_ecall);
+  always @(*) begin
+    is_ecall = 0;
+    if (part_of_inst == `ECALL) begin
+        is_ecall = 1;
+    end
+  end
 endmodule
 
 module ALUControlUnit(input [31:0] part_of_inst, output alu_op);

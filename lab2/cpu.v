@@ -25,6 +25,7 @@ module CPU(input reset,       // positive reset signal
   wire [31:0] rd_din;
   wire [31:0] rs1_dout;
   wire [31:0] rs2_dout;
+  wire [31:0] r17_dout;
   wire [31:0] imm_gen_out;
   wire is_jal;
   wire is_jalr;
@@ -43,11 +44,13 @@ module CPU(input reset,       // positive reset signal
 
   // for debugging the value. Remove this before submit
   always @(inst) begin
-    $display("current_pc: %d", current_pc, ", inst: %h", inst);
+    $display("current_pc: %d", current_pc, ", inst: %h", inst, ", is_ecall: %b", is_ecall);
   end
 
   // TODO: Temporary calculate next pc by adding 4 to current pc
   assign next_pc =  current_pc + 4;
+
+  assign is_halted = is_ecall && r17_dout == 10;
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -76,13 +79,14 @@ module CPU(input reset,       // positive reset signal
     .rd_din (rd_din),       // input
     .write_enable (write_enable),    // input
     .rs1_dout (rs1_dout),     // output
-    .rs2_dout (rs2_dout)      // output
+    .rs2_dout (rs2_dout),     // output
+    .r17_dout (r17_dout)
   );
 
 
   // ---------- Control Unit ----------
   ControlUnit ctrl_unit (
-    .part_of_inst(inst),  // input
+    .part_of_inst(inst[6:0]),  // input
     .is_jal(is_jal),        // output
     .is_jalr(is_jalr),       // output
     .branch(branch),        // output
