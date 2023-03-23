@@ -42,9 +42,8 @@ module CPU(input reset,       // positive reset signal
   /***** Register declarations *****/
 
   // for debugging the value. Remove this before submit
-  initial begin
-    $monitor("current_pc: %d", current_pc);
-    $monitor("inst: %h", inst);
+  always @(inst) begin
+    $display("current_pc: %d", current_pc, ", inst: %h", inst);
   end
 
   // TODO: Temporary calculate next pc by adding 4 to current pc
