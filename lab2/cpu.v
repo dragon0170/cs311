@@ -41,6 +41,15 @@ module CPU(input reset,       // positive reset signal
 
   /***** Register declarations *****/
 
+  // for debugging the value. Remove this before submit
+  initial begin
+    $monitor("current_pc: %d", current_pc);
+    $monitor("inst: %h", inst);
+  end
+
+  // TODO: Temporary calculate next pc by adding 4 to current pc
+  assign next_pc =  current_pc + 4;
+
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
   PC pc(
