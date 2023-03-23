@@ -20,7 +20,7 @@ module ControlUnit(input [6:0] part_of_inst,
     mem_to_reg = 0;
     mem_write = 0;
     alu_src = 0;
-    write_enable = 0;
+    write_enable = 0; // regWrite in pdf
     pc_to_reg = 0;
     is_ecall = 0;
 

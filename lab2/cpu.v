@@ -31,11 +31,13 @@ module CPU(input reset,       // positive reset signal
   wire alu_src;
   wire pc_to_reg;
   wire is_ecall;
-  wire [31:0] alu_in_1;
   wire [31:0] alu_in_2;
   wire [31:0] alu_result;
   wire alu_bcond;
   wire [31:0] dout;
+  wire [31:0] bj_out;
+  wire [31:0] pc_src1_out;
+  wire [31:0] rd_din_pre;
 
   /***** Register declarations *****/
 
@@ -98,7 +100,7 @@ module CPU(input reset,       // positive reset signal
 
   // ---------- Immediate Generator ----------
   ImmediateGenerator imm_gen(
-    .part_of_inst(inst),  // input
+    .inst(inst),  // input
     .imm_gen_out(imm_gen_out)    // output
   );
 
@@ -111,7 +113,7 @@ module CPU(input reset,       // positive reset signal
   // ---------- ALU ----------
   ALU alu (
     .alu_op(alu_op),      // input
-    .alu_in_1(alu_in_1),    // input  
+    .alu_in_1(rs1_dout),    // input = alu_in_1 
     .alu_in_2(alu_in_2),    // input
     .alu_result(alu_result),  // output
     .alu_bcond(alu_bcond)     // output
@@ -127,4 +129,53 @@ module CPU(input reset,       // positive reset signal
     .mem_write (mem_write),  // input
     .dout (dout)        // output
   );
+
+
+  // ---------- MUX at ALUsrc----------
+  Mux mux_alu_src(
+    .de_assert(rs2_dout),  // input
+    .assert(imm_gen_out),  // input
+    .sel(alu_src),  // input
+    .dout(alu_in_2)  // output
+  );
+
+  // ----- Adder for B/J instruction---
+  Adder adder_b_j(
+    .in1(current_pc),  // input
+    .in2(imm_gen_out),  // input
+    .dout(bj_out)  // output
+  );
+
+  // ---------- MUX at PCsrc1----------
+  Mux mux_pc_src1(
+    .de_assert(next_pc),  // input
+    .assert(bj_out),  // input
+    .sel(is_jal || (branch && alu_bcond)),  // input
+    .dout(pc_src1_out)  // output
+  );
+
+  // ---------- MUX at PCsrc2----------
+  Mux mux_pc_src2(
+    .de_assert(pc_src1_out),  // input
+    .assert(alu_result),  // input
+    .sel(is_jalr),  // input
+    .dout(next_pc)  // output
+  );
+
+  // --------- MUX after Data Memory---
+  Mux mux_dmem(
+    .de_assert(alu_result),  // input
+    .assert(dout),  // input
+    .sel(mem_to_reg),  // input
+    .dout(rd_din_pre)  // output
+  );
+
+  // ---------- MUX at rd_din----------
+  Mux mux_rd_din(
+    .de_assert(rd_din_pre),  // input
+    .assert(current_pc + 4),  // input
+    .sel(pc_to_reg),  // input
+    .dout(rd_din)  // output
+  );
+
 endmodule
