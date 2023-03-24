@@ -13,6 +13,7 @@ module CPU(input reset,       // positive reset signal
            output is_halted); // Whehther to finish simulation
   /***** Wire declarations *****/
   wire [31:0] next_pc;
+  wire [31:0] current_pc_plus_4;
   wire [31:0] current_pc;
   wire [31:0] inst;
   wire mem_read;
@@ -45,9 +46,6 @@ module CPU(input reset,       // positive reset signal
   always @(inst) begin
     $display("current_pc: %d", current_pc, ", inst: %h", inst, ", is_ecall: %b", is_ecall);
   end
-
-  // TODO: Temporary calculate next pc by adding 4 to current pc
-  assign next_pc =  current_pc + 4;
 
   assign is_halted = is_ecall && r17_dout == 10;
 
@@ -146,9 +144,16 @@ module CPU(input reset,       // positive reset signal
     .dout(bj_out)  // output
   );
 
+  // ----- Adder for current_pc + 4 ---
+  Adder adder_pc_plus_4(
+    .in1(current_pc),  // input
+    .in2(32'd4),  // input
+    .dout(current_pc_plus_4)  // output
+  );
+
   // ---------- MUX at PCsrc1----------
   Mux mux_pc_src1(
-    .de_assert(next_pc),  // input
+    .de_assert(current_pc_plus_4),  // input
     .assert(bj_out),  // input
     .sel(is_jal || (branch && alu_bcond)),  // input
     .dout(pc_src1_out)  // output
@@ -171,9 +176,10 @@ module CPU(input reset,       // positive reset signal
   );
 
   // ---------- MUX at rd_din----------
+  // TODO: current_pc + 4 관련 처리 변경
   Mux mux_rd_din(
     .de_assert(rd_din_pre),  // input
-    .assert(current_pc + 4),  // input
+    .assert(current_pc_plus_4),  // input
     .sel(pc_to_reg),  // input
     .dout(rd_din)  // output
   );
