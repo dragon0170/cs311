@@ -42,10 +42,6 @@ module CPU(input reset,       // positive reset signal
 
   /***** Register declarations *****/
 
-  // for debugging the value. Remove this before submit
-  always @(inst) begin
-    $display("current_pc: %d", current_pc, ", inst: %h", inst, ", is_ecall: %b", is_ecall);
-  end
 
   assign is_halted = is_ecall && r17_dout == 10;
 
@@ -176,7 +172,6 @@ module CPU(input reset,       // positive reset signal
   );
 
   // ---------- MUX at rd_din----------
-  // TODO: current_pc + 4 관련 처리 변경
   Mux mux_rd_din(
     .de_assert(rd_din_pre),  // input
     .assert(current_pc_plus_4),  // input
