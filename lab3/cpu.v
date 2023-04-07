@@ -135,4 +135,41 @@ module CPU(input reset,       // positive reset signal
     .alu_bcond(alu_bcond)     // output
   );
 
+  Mux2To1 i_or_d_mux(
+    .din0(current_pc),
+    .din1(ALUOut),
+    .sel(i_or_d),
+    .dout(addr)
+  );
+
+  Mux2To1 mem_to_reg_mux(
+    .din0(ALUOut),
+    .din1(MDR),
+    .sel(mem_to_reg),
+    .dout(rd_din)
+  );
+
+  Mux2To1 alu_src_a_mux(
+    .din0(current_pc),
+    .din1(A),
+    .sel(alu_src_a),
+    .dout(alu_in_1)
+  );
+
+  Mux4To1 alu_src_b_mux(
+    .din0(B),
+    .din1(32'b100),
+    .din2(imm_gen_out),
+    .din3(32'b0), // not using
+    .sel(alu_src_b),
+    .dout(alu_in_2)
+  );
+
+  Mux2To1 pc_source_mux(
+    .din0(alu_result),
+    .din1(ALUOut),
+    .sel(pc_source),
+    .dout(next_pc)
+  );
+
 endmodule
