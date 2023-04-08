@@ -97,6 +97,7 @@ module CPU(input reset,       // positive reset signal
 
   // ---------- Control Unit ----------
   ControlUnit ctrl_unit(
+    .clk(clk),  // input
     .part_of_inst(IR[6:0]),  // input
     .pc_write_cond(pc_write_cond),      // output
     .pc_write(pc_write),      // output
