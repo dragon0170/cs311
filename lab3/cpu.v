@@ -98,7 +98,9 @@ module CPU(input reset,       // positive reset signal
   // ---------- Control Unit ----------
   ControlUnit ctrl_unit(
     .clk(clk),  // input
+    .reset(reset), // input
     .part_of_inst(IR[6:0]),  // input
+    .opcode_from_mem(dout[6:0]),  // input
     .pc_write_cond(pc_write_cond),      // output
     .pc_write(pc_write),      // output
     .i_or_d(i_or_d),      // output
