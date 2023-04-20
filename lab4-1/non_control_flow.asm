@@ -13,6 +13,13 @@ main:
         addi    a0,zero,0
         not     a0,a0
         or      a0,zero,a0
+        add    t3, a0, a5
+        or     t2, a4, t3
+        sll    t4, t3, t2
+        srl    t5, t3, t2
+        addi    t5, t2, 10
+        xor     t6, t2, t5
+        addi    t6, t4, 20
         andi    a0,a0,12
         addi    a0,a0,28
         slli    a0,a0,2 
@@ -36,5 +43,10 @@ main:
         lw      ra,28(sp)
         lw      s0,24(sp)
         addi    sp,sp,32
+        li      a7, 10
+        addi    a7, a6, 5
+        addi    a7, t5, 5
+        addi    a7, a7, -4
+        ecall
         li      a7, 10
         ecall

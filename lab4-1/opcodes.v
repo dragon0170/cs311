@@ -1,5 +1,5 @@
-// The constants below are from riscv spec
-// Please do not change the values
+// You don't have to use constants below if you want to define yours.
+// You can modify and define constants for your convenience
 
 // OPCODE
 // R-type instruction opcodes
