@@ -12,6 +12,9 @@ module CPU(input reset,       // positive reset signal
            input clk,         // clock signal
            output is_halted); // Whehther to finish simulation
   /***** Wire declarations *****/
+  wire [31:0] next_pc;
+  wire [31:0] current_pc;
+  wire [31:0] inst;
   /***** Register declarations *****/
   // You need to modify the width of registers
   // In addition, 
@@ -55,27 +58,29 @@ module CPU(input reset,       // positive reset signal
   reg MEM_WB_mem_to_reg_src_2;
 
   // ---------- Update program counter ----------
-  // PC must be updated on the rising edge (positive edge) of the clock.
+  // PC must be updated on the rising edge (positive edge) of the clock.  
   PC pc(
-    .reset(),       // input (Use reset to initialize PC. Initial value must be 0)
-    .clk(),         // input
-    .next_pc(),     // input
-    .current_pc()   // output
+    .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
+    .clk(clk),         // input
+    .next_pc(next_pc),     // input
+    .current_pc(current_pc)   // output
   );
-  
+
   // ---------- Instruction Memory ----------
   InstMemory imem(
-    .reset(),   // input
-    .clk(),     // input
-    .addr(),    // input
-    .dout()     // output
+    .reset(reset),   // input
+    .clk(clk),     // input
+    .addr(current_pc),    // input
+    .dout(inst)     // output
   );
 
   // Update IF/ID pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
+      IF_ID_inst <= 0;
     end
     else begin
+      IF_ID_inst <= inst;
     end
   end
 
@@ -161,6 +166,14 @@ module CPU(input reset,       // positive reset signal
     else begin
     end
   end
+
+
+
+  Adder pc_adder (
+    .in1(current_pc),
+    .in2(1d'4)
+    .dout(next_pc)
+    );
 
   
 endmodule
