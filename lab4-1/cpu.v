@@ -19,7 +19,6 @@ module CPU(input reset,       // positive reset signal
   wire [31:0] rs1_dout;
   wire [31:0] rs2_dout;
   wire [31:0] imm_gen_out;
-  wire [31:0] alu_in_2;
   wire [31:0] alu_result;
   wire [31:0] mem_dout;
   wire alu_bcond; // TODO: will be used at control flow instruction feature
@@ -32,6 +31,11 @@ module CPU(input reset,       // positive reset signal
   wire [3:0] alu_op;
   wire alu_src;
   wire stall;
+  wire [1:0] forward_a;
+  wire [1:0] forward_b;
+  wire [31:0] forwarded_rs2_data;
+  wire [31:0] alu_in_1;
+  wire [31:0] alu_in_2;
   /***** Register declarations *****/
   // You need to modify the width of registers
   // In addition, 
@@ -52,6 +56,8 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] ID_EX_rs2_data;
   reg [31:0] ID_EX_imm;
   reg [31:0] ID_EX_ALU_ctrl_unit_input;
+  reg [4:0] ID_EX_rs1;
+  reg [4:0] ID_EX_rs2;
   reg [4:0] ID_EX_rd;
 
   /***** EX/MEM pipeline registers *****/
@@ -117,6 +123,7 @@ module CPU(input reset,       // positive reset signal
   HazardDetectionUnit hazard_detection_unit (
     .reg_write_ex (ID_EX_reg_write),  // input
     .reg_write_mem (EX_MEM_reg_write),  // input
+    .mem_read_ex (ID_EX_mem_read),  // input
     .opcode_id (IF_ID_inst[6:0]),  // input
     .rs1_id (is_ecall ? 5'b10001 : IF_ID_inst[19:15]),  // input
     .rs2_id (IF_ID_inst[24:20]),  // input
@@ -185,16 +192,49 @@ module CPU(input reset,       // positive reset signal
       ID_EX_rs2_data <= rs2_dout;
       ID_EX_imm <= imm_gen_out;
       ID_EX_ALU_ctrl_unit_input <= IF_ID_inst;
+      ID_EX_rs1 <= IF_ID_inst[19:15];
+      ID_EX_rs2 <= IF_ID_inst[24:20];
       ID_EX_rd <= IF_ID_inst[11:7];
     end
   end
 
   // Mux for alu_in_2
   Mux2To1 alu_in_2_mux(
-    .din0(ID_EX_rs2_data),
+    .din0(forwarded_rs2_data),
     .din1(ID_EX_imm),
     .sel(ID_EX_alu_src),
     .dout(alu_in_2)
+  );
+
+  // Mux for rs1 data forwarding
+  Mux4To1 rs1_data_forward_mux(
+    .din0 (ID_EX_rs1_data),
+    .din1 (EX_MEM_alu_out),
+    .din2 (rd_din),
+    .din3 (32'b0),
+    .sel (forward_a),
+    .dout (alu_in_1)
+  );
+
+  // Mux for rs2 data forwarding
+  Mux4To1 rs2_data_forward_mux(
+    .din0 (ID_EX_rs2_data),
+    .din1 (EX_MEM_alu_out),
+    .din2 (rd_din),
+    .din3 (32'b0),
+    .sel (forward_b),
+    .dout (forwarded_rs2_data)
+  );
+
+  ForwardingUnit forwarding_unit (
+    .reg_write_mem (EX_MEM_reg_write), // input
+    .reg_write_wb (MEM_WB_reg_write), // input
+    .rs1_ex (ID_EX_rs1), // input
+    .rs2_ex (ID_EX_rs2), // input
+    .rd_mem (EX_MEM_rd), // input
+    .rd_wb (MEM_WB_rd), // input
+    .forward_a (forward_a), // output
+    .forward_b (forward_b) // output
   );
 
   // ---------- ALU Control Unit ----------
@@ -206,7 +246,7 @@ module CPU(input reset,       // positive reset signal
   // ---------- ALU ----------
   ALU alu (
     .alu_op(alu_op),      // input
-    .alu_in_1(ID_EX_rs1_data),    // input  
+    .alu_in_1(alu_in_1),    // input  
     .alu_in_2(alu_in_2),    // input
     .alu_result(alu_result),  // output
     .alu_bcond(alu_bcond)     // output
@@ -233,7 +273,7 @@ module CPU(input reset,       // positive reset signal
       EX_MEM_halt_cpu <= ID_EX_halt_cpu;
 
       EX_MEM_alu_out <= alu_result;
-      EX_MEM_dmem_data <= ID_EX_rs2_data;
+      EX_MEM_dmem_data <= forwarded_rs2_data;
       EX_MEM_rd <= ID_EX_rd;
     end
   end
