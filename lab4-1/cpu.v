@@ -31,6 +31,7 @@ module CPU(input reset,       // positive reset signal
   wire is_ecall;
   wire [3:0] alu_op;
   wire alu_src;
+  wire stall;
   /***** Register declarations *****/
   // You need to modify the width of registers
   // In addition, 
@@ -87,6 +88,7 @@ module CPU(input reset,       // positive reset signal
   PC pc(
     .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
     .clk(clk),         // input
+    .pc_write(!stall),         // input
     .next_pc(next_pc),     // input
     .current_pc(current_pc)   // output
   );
@@ -105,9 +107,23 @@ module CPU(input reset,       // positive reset signal
       IF_ID_inst <= 0;
     end
     else begin
-      IF_ID_inst <= inst;
+      if (!stall) begin
+        IF_ID_inst <= inst;
+      end
     end
   end
+
+  // ---------- Hazard Detection Unit ----------
+  HazardDetectionUnit hazard_detection_unit (
+    .reg_write_ex (ID_EX_reg_write),  // input
+    .reg_write_mem (EX_MEM_reg_write),  // input
+    .opcode_id (IF_ID_inst[6:0]),  // input
+    .rs1_id (is_ecall ? 5'b10001 : IF_ID_inst[19:15]),  // input
+    .rs2_id (IF_ID_inst[24:20]),  // input
+    .rd_ex (ID_EX_rd),  // input
+    .rd_mem (EX_MEM_rd),  // input
+    .stall (stall)  // output
+  );
 
   // ---------- Register File ----------
   RegisterFile reg_file (
@@ -159,11 +175,11 @@ module CPU(input reset,       // positive reset signal
     end
     else begin
       ID_EX_alu_src <= alu_src;
-      ID_EX_mem_write <= mem_write;
+      ID_EX_mem_write <= stall ? 0 : mem_write;
       ID_EX_mem_read <= mem_read;
       ID_EX_mem_to_reg <= mem_to_reg;
-      ID_EX_reg_write <= reg_write;
-      ID_EX_halt_cpu <= is_ecall && rs1_dout == 10;
+      ID_EX_reg_write <= stall ? 0 : reg_write;
+      ID_EX_halt_cpu <= stall ? 0 : (is_ecall && rs1_dout == 10);
 
       ID_EX_rs1_data <= rs1_dout;
       ID_EX_rs2_data <= rs2_dout;
