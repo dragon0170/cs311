@@ -27,7 +27,7 @@ module CPU(input reset,       // positive reset signal
   wire mem_read;
   wire mem_write;
   wire mem_to_reg;
-  wire pc_to_reg;
+  wire pc_to_reg; // TODO: will be used at control flow instruction feature
   wire is_ecall;
   wire [3:0] alu_op;
   wire alu_src;
@@ -137,7 +137,7 @@ module CPU(input reset,       // positive reset signal
 
   // ---------- Immediate Generator ----------
   ImmediateGenerator imm_gen(
-    .part_of_inst(IF_ID_inst),  // input
+    .inst(IF_ID_inst),  // input
     .imm_gen_out(imm_gen_out)    // output
   );
 
@@ -183,7 +183,7 @@ module CPU(input reset,       // positive reset signal
 
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit (
-    .part_of_inst(ID_EX_ALU_ctrl_unit_input),  // input
+    .inst(ID_EX_ALU_ctrl_unit_input),  // input
     .alu_op(alu_op)         // output
   );
 
