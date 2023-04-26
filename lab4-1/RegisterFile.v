@@ -15,7 +15,7 @@ module RegisterFile(input	reset,
   // Synchronously write data to the register file
   assign rs1_dout = rf[rs1];
   assign rs2_dout = rf[rs2];
-  always @(posedge clk) begin
+  always @(negedge clk) begin
     if (write_enable & (rd != 0))
       rf[rd] <= rd_din;
   end
