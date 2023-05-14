@@ -49,6 +49,7 @@ module CPU(input reset,       // positive reset signal
   wire branch_taken;
   wire predict_correct;
   wire id_flush;
+  wire [4:0] predicted_entry;
   /***** Register declarations *****/
   // You need to modify the width of registers
   // In addition, 
