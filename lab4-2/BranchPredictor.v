@@ -11,11 +11,13 @@ module BranchPredictor(input reset,
   integer i;
 
   wire [31:0] pc_plus_4;
-  wire [57:0] current_entry;
+  //[58:34]-tag, [33:32]-bht, [31:0]-btb
+  wire [58:0] current_entry;
 
-  reg [57:0] entry[0:31];
+  reg [58:0] entry[0:31];
+  reg [4:0] bhsr;
 
-  assign current_entry = entry[current_pc[6:2]];
+  assign current_entry = entry[current_pc[6:2] ^ bhsr];
 
   Adder pc_plus_4_adder(
     .in1(current_pc),
@@ -26,7 +28,7 @@ module BranchPredictor(input reset,
   Mux2To1 predicted_next_pc_mux(
     .din0(pc_plus_4),
     .din1(current_entry[31:0]),
-    .sel((current_entry[57:33] == current_pc[31:7]) && (current_entry[32] == 1)),
+    .sel((current_entry[58:34] == current_pc[31:7]) && (current_entry[33] == 1)),
     .dout(next_pc)
   );
 
@@ -34,15 +36,28 @@ module BranchPredictor(input reset,
     if (reset) begin
       for (i = 0; i < 32; i = i + 1)
         entry[i] <= 58'b0;
+      bhsr <= 5'b0;
     end
 
+    // 2-bit saturation counter
     if (bht_write_enable) begin
-      if (entry[write_index][57:33] == tag_data || tag_and_btb_write_enable) begin
-        entry[write_index][32] <= bht_data;
+      if (entry[write_index][58:34] == tag_data || tag_and_btb_write_enable) begin
+        if (bht_data) begin
+          if (entry[write_index][33:32] < 2'b11) begin
+            entry[write_index][33:32] <= entry[write_index][33:32] + 1;
+          end
+        end
+        else begin
+          if (entry[write_index][33:32] > 2'b00) begin
+            entry[write_index][33:32] <= entry[write_index][33:32] - 1;
+          end
+        end
       end
+      bhsr <= {bhsr[3:0], bht_data};
     end
+
     if (tag_and_btb_write_enable) begin
-      entry[write_index][57:33] <= tag_data;
+      entry[write_index][58:34] <= tag_data;
       entry[write_index][31:0] <= btb_data;
     end
   end
