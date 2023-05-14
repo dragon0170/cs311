@@ -7,7 +7,8 @@ module BranchPredictor(input reset,
                        input [31:0] btb_data,
                        input bht_write_enable,
                        input tag_and_btb_write_enable,
-                       output [31:0] next_pc);
+                       output [31:0] next_pc,
+                       output reg [4:0] predicted_entry);
   integer i;
 
   wire [31:0] pc_plus_4;
@@ -17,7 +18,12 @@ module BranchPredictor(input reset,
   reg [58:0] entry[0:31];
   reg [4:0] bhsr;
 
-  assign current_entry = entry[current_pc[6:2] ^ bhsr];
+
+always @(*) begin
+  predicted_entry = current_pc[6:2] ^ bhsr;
+end
+
+assign current_entry = entry[predicted_entry];
 
   Adder pc_plus_4_adder(
     .in1(current_pc),
@@ -38,7 +44,7 @@ module BranchPredictor(input reset,
         entry[i] <= 58'b0;
       bhsr <= 5'b0;
     end
-
+ 
     // 2-bit saturation counter
     if (bht_write_enable) begin
       if (entry[write_index][58:34] == tag_data || tag_and_btb_write_enable) begin
