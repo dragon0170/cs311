@@ -49,6 +49,7 @@ module CPU(input reset,       // positive reset signal
   wire branch_taken;
   wire predict_correct;
   wire id_flush;
+  wire [4:0] predicted_entry;
   /***** Register declarations *****/
   // You need to modify the width of registers
   // In addition, 
@@ -59,6 +60,7 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] IF_ID_pc;
   reg [31:0] IF_ID_predicted_next_pc;
   reg IF_ID_flush;
+  reg [4:0] IF_ID_predicted_entry;
   /***** ID/EX pipeline registers *****/
   // From the control unit
   reg ID_EX_alu_src;        // will be used in EX stage
@@ -82,6 +84,7 @@ module CPU(input reset,       // positive reset signal
   reg [4:0] ID_EX_rd;
   reg [31:0] ID_EX_pc;
   reg [31:0] ID_EX_predicted_next_pc;
+  reg [4:0] ID_EX_predicted_entry;
 
   /***** EX/MEM pipeline registers *****/
   // From the control unit
@@ -113,13 +116,14 @@ module CPU(input reset,       // positive reset signal
     .reset(reset),       // input
     .clk(clk),         // input
     .current_pc(current_pc), // input
-    .write_index(ID_EX_pc[6:2]), // input
+    .write_index(ID_EX_predicted_entry), // input
     .bht_data(branch_taken), // input
     .tag_data(ID_EX_pc[31:7]), // input
     .btb_data(actual_next_pc), // input
     .bht_write_enable(ID_EX_is_jal || ID_EX_is_jalr || ID_EX_branch),
     .tag_and_btb_write_enable(branch_taken && !predict_correct),
-    .next_pc(predicted_next_pc) // output
+    .next_pc(predicted_next_pc), // output
+    .predicted_entry(predicted_entry) // output
   );
 
   Mux2To1 next_pc_mux(
@@ -154,6 +158,7 @@ module CPU(input reset,       // positive reset signal
       IF_ID_pc <= 0;
       IF_ID_predicted_next_pc <= 4;
       IF_ID_flush <= 0;
+      IF_ID_predicted_entry <= 0;
     end
     else begin
       if (!stall) begin
@@ -161,6 +166,7 @@ module CPU(input reset,       // positive reset signal
         IF_ID_pc <= current_pc;
         IF_ID_predicted_next_pc <= predicted_next_pc;
         IF_ID_flush <= !predict_correct;
+        IF_ID_predicted_entry <= predicted_entry;
       end
     end
   end
@@ -235,6 +241,7 @@ module CPU(input reset,       // positive reset signal
       ID_EX_rd <= 0;
       ID_EX_pc <= 0;
       ID_EX_predicted_next_pc <= 4;
+      ID_EX_predicted_entry <= 0;
       ID_EX_flush <= 0;
     end
     else begin
@@ -258,6 +265,7 @@ module CPU(input reset,       // positive reset signal
       ID_EX_rd <= IF_ID_inst[11:7];
       ID_EX_pc <= IF_ID_pc;
       ID_EX_predicted_next_pc <= IF_ID_predicted_next_pc;
+      ID_EX_predicted_entry <= IF_ID_predicted_entry;
       ID_EX_flush <= stall || id_flush;
     end
   end

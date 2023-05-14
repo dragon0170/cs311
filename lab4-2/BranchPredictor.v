@@ -19,11 +19,11 @@ module BranchPredictor(input reset,
   reg [4:0] bhsr;
 
 
-always @(*) begin
-  predicted_entry = current_pc[6:2] ^ bhsr;
-end
+  always @(*) begin
+    predicted_entry = current_pc[6:2] ^ bhsr;
+  end
 
-assign current_entry = entry[predicted_entry];
+  assign current_entry = entry[predicted_entry];
 
   Adder pc_plus_4_adder(
     .in1(current_pc),
