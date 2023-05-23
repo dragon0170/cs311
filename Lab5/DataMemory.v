@@ -44,7 +44,7 @@ module DataMemory #(parameter MEM_DEPTH = 16384,
     // Initialize data memory
     if (reset) begin
        for (i = 0; i < MEM_DEPTH; i = i + 1)
-         mem[i] = 0
+         mem[i] = 0;
     end
     // Write data to the memory
     else if (_mem_write && delay_counter == 0) begin

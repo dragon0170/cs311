@@ -36,6 +36,8 @@ module top;
   integer i;
   always @(posedge clk) begin
     if (is_halted) begin
+      $display("TOTAL CACHE ACCESS: %d", cpu.cache.cache_total);
+      $display("TOTAL CACHE MISS: %d\n", cpu.cache.cache_miss);
       $display("TOTAL CYCLE %d\n", total_cycle);
       // Print register values
       for (i = 0; i < 32; i = i + 1)

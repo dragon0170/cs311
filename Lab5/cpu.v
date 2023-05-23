@@ -51,10 +51,10 @@ module CPU(input reset,       // positive reset signal
   wire id_flush;
   wire [4:0] predicted_entry;
 
-  wire is_input_valid;
   wire is_ready;
   wire is_output_valid;
   wire is_hit;
+  wire stall_pipeline;
   /***** Register declarations *****/
   // You need to modify the width of registers
   // In addition, 
@@ -143,7 +143,7 @@ module CPU(input reset,       // positive reset signal
   PC pc(
     .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
     .clk(clk),         // input
-    .pc_write(!stall),         // input
+    .pc_write(!stall && !stall_pipeline),         // input
     .next_pc(next_pc),     // input
     .current_pc(current_pc)   // output
   );
@@ -166,7 +166,7 @@ module CPU(input reset,       // positive reset signal
       IF_ID_predicted_entry <= 0;
     end
     else begin
-      if (!stall) begin
+      if (!stall && !stall_pipeline) begin
         IF_ID_inst <= inst;
         IF_ID_pc <= current_pc;
         IF_ID_predicted_next_pc <= predicted_next_pc;
@@ -250,28 +250,30 @@ module CPU(input reset,       // positive reset signal
       ID_EX_flush <= 0;
     end
     else begin
-      ID_EX_alu_src <= alu_src;
-      ID_EX_mem_write <= (stall || id_flush) ? 0 : mem_write;
-      ID_EX_mem_read <= mem_read;
-      ID_EX_mem_to_reg <= mem_to_reg;
-      ID_EX_pc_to_reg <= pc_to_reg;
-      ID_EX_reg_write <= (stall || id_flush) ? 0 : reg_write;
-      ID_EX_halt_cpu <= (stall || id_flush) ? 0 : (is_ecall && rs1_dout == 10);
-      ID_EX_is_jal <= (stall || id_flush) ? 0 : is_jal;
-      ID_EX_is_jalr <= (stall || id_flush) ? 0 : is_jalr;
-      ID_EX_branch <= (stall || id_flush) ? 0 : branch;
+      if (!stall_pipeline) begin
+        ID_EX_alu_src <= alu_src;
+        ID_EX_mem_write <= (stall || id_flush) ? 0 : mem_write;
+        ID_EX_mem_read <= (stall || id_flush) ? 0 : mem_read;
+        ID_EX_mem_to_reg <= mem_to_reg;
+        ID_EX_pc_to_reg <= pc_to_reg;
+        ID_EX_reg_write <= (stall || id_flush) ? 0 : reg_write;
+        ID_EX_halt_cpu <= (stall || id_flush) ? 0 : (is_ecall && rs1_dout == 10);
+        ID_EX_is_jal <= (stall || id_flush) ? 0 : is_jal;
+        ID_EX_is_jalr <= (stall || id_flush) ? 0 : is_jalr;
+        ID_EX_branch <= (stall || id_flush) ? 0 : branch;
 
-      ID_EX_rs1_data <= rs1_dout;
-      ID_EX_rs2_data <= rs2_dout;
-      ID_EX_imm <= imm_gen_out;
-      ID_EX_ALU_ctrl_unit_input <= IF_ID_inst;
-      ID_EX_rs1 <= IF_ID_inst[19:15];
-      ID_EX_rs2 <= IF_ID_inst[24:20];
-      ID_EX_rd <= IF_ID_inst[11:7];
-      ID_EX_pc <= IF_ID_pc;
-      ID_EX_predicted_next_pc <= IF_ID_predicted_next_pc;
-      ID_EX_predicted_entry <= IF_ID_predicted_entry;
-      ID_EX_flush <= stall || id_flush;
+        ID_EX_rs1_data <= rs1_dout;
+        ID_EX_rs2_data <= rs2_dout;
+        ID_EX_imm <= imm_gen_out;
+        ID_EX_ALU_ctrl_unit_input <= IF_ID_inst;
+        ID_EX_rs1 <= IF_ID_inst[19:15];
+        ID_EX_rs2 <= IF_ID_inst[24:20];
+        ID_EX_rd <= IF_ID_inst[11:7];
+        ID_EX_pc <= IF_ID_pc;
+        ID_EX_predicted_next_pc <= IF_ID_predicted_next_pc;
+        ID_EX_predicted_entry <= IF_ID_predicted_entry;
+        ID_EX_flush <= stall || id_flush;
+      end
     end
   end
 
@@ -378,25 +380,25 @@ module CPU(input reset,       // positive reset signal
       EX_MEM_pc_plus_4 <= 0;
     end
     else begin
-      EX_MEM_mem_write <= ID_EX_mem_write;
-      EX_MEM_mem_read <= ID_EX_mem_read;
-      EX_MEM_mem_to_reg <= ID_EX_mem_to_reg;
-      EX_MEM_pc_to_reg <= ID_EX_pc_to_reg;
-      EX_MEM_reg_write <= ID_EX_reg_write;
-      EX_MEM_halt_cpu <= ID_EX_halt_cpu;
+      if (!stall_pipeline) begin
+        EX_MEM_mem_write <= ID_EX_mem_write;
+        EX_MEM_mem_read <= ID_EX_mem_read;
+        EX_MEM_mem_to_reg <= ID_EX_mem_to_reg;
+        EX_MEM_pc_to_reg <= ID_EX_pc_to_reg;
+        EX_MEM_reg_write <= ID_EX_reg_write;
+        EX_MEM_halt_cpu <= ID_EX_halt_cpu;
 
-      EX_MEM_alu_out <= alu_result;
-      EX_MEM_dmem_data <= forwarded_rs2_data;
-      EX_MEM_rd <= ID_EX_rd;
-      EX_MEM_pc_plus_4 <= ex_pc_plus_4;
+        EX_MEM_alu_out <= alu_result;
+        EX_MEM_dmem_data <= forwarded_rs2_data;
+        EX_MEM_rd <= ID_EX_rd;
+        EX_MEM_pc_plus_4 <= ex_pc_plus_4;
+      end
     end
   end
 
-  // TODO: should stall instructions when cache needs action
   Cache cache(
     .reset (reset),      // input
     .clk (clk),        // input
-    .is_input_valid (is_input_valid),   // input TODO: set is_input_valid value appropriately
     .addr (EX_MEM_alu_out),       // input
     .din (EX_MEM_dmem_data),        // input
     .mem_read (EX_MEM_mem_read),   // input
@@ -406,6 +408,8 @@ module CPU(input reset,       // positive reset signal
     .is_output_valid (is_output_valid),        // output
     .is_hit (is_hit)        // output
   );
+
+  assign stall_pipeline = !is_ready || !is_output_valid || !is_hit;
 
   // Update MEM/WB pipeline registers here
   always @(posedge clk) begin
@@ -421,15 +425,17 @@ module CPU(input reset,       // positive reset signal
       MEM_WB_pc_plus_4 <= 0;
     end
     else begin
-      MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;
-      MEM_WB_pc_to_reg <= EX_MEM_pc_to_reg;
-      MEM_WB_reg_write <= EX_MEM_reg_write;
-      MEM_WB_halt_cpu <= EX_MEM_halt_cpu;
+      if (!stall_pipeline) begin
+        MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;
+        MEM_WB_pc_to_reg <= EX_MEM_pc_to_reg;
+        MEM_WB_reg_write <= EX_MEM_reg_write;
+        MEM_WB_halt_cpu <= EX_MEM_halt_cpu;
 
-      MEM_WB_mem_to_reg_src_1 <= EX_MEM_alu_out;
-      MEM_WB_mem_to_reg_src_2 <= mem_dout;
-      MEM_WB_rd <= EX_MEM_rd;
-      MEM_WB_pc_plus_4 <= EX_MEM_pc_plus_4;
+        MEM_WB_mem_to_reg_src_1 <= EX_MEM_alu_out;
+        MEM_WB_mem_to_reg_src_2 <= mem_dout;
+        MEM_WB_rd <= EX_MEM_rd;
+        MEM_WB_pc_plus_4 <= EX_MEM_pc_plus_4;
+      end
     end
   end
 
